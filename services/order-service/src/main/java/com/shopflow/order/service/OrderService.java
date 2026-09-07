@@ -88,7 +88,8 @@ public class OrderService {
         Order order = Order.create(orderId, userId, lines, total);
         orders.save(order);
         history.save(order.initialHistory(cid()));
-        events.orderCreated(order);
+        events.orderCreated(order); // outbox (same tx)
+        history.save(order.transitionTo(OrderStatus.INVENTORY_PENDING, "order created, awaiting inventory", cid()));
         cartClient.clear(bearerToken);
 
         log.info("order created id={} userId={} total={} lines={}", orderId, userId, total, lines.size());
@@ -104,6 +105,69 @@ public class OrderService {
         history.save(order.transitionTo(OrderStatus.CANCELLED, "CUSTOMER_CANCELLED", cid()));
         events.orderCancelled(order, "CUSTOMER_CANCELLED");
         return detail(order);
+    }
+
+    // ---- Saga step handlers (called by OrderSagaListener; guarded so late/duplicate events are no-ops) ----
+
+    @Transactional
+    public void onInventoryReserved(UUID orderId) {
+        Order order = requireOrder(orderId);
+        if (order.getStatus() != OrderStatus.INVENTORY_PENDING) {
+            log.info("ignoring INVENTORY_RESERVED for order {} in status {}", orderId, order.getStatus());
+            return;
+        }
+        history.save(order.transitionTo(OrderStatus.AWAITING_PAYMENT, "inventory reserved", cid()));
+        events.paymentRequested(order);
+    }
+
+    @Transactional
+    public void onInventoryReservationFailed(UUID orderId, String reason) {
+        Order order = requireOrder(orderId);
+        if (order.getStatus() != OrderStatus.INVENTORY_PENDING) {
+            return;
+        }
+        history.save(order.transitionTo(OrderStatus.CANCELLED, "OUT_OF_STOCK", cid()));
+        events.orderCancelled(order, "OUT_OF_STOCK"); // no charge was made; nothing to compensate
+        log.info("order {} cancelled: {}", orderId, reason);
+    }
+
+    @Transactional
+    public void onPaymentSucceeded(UUID orderId) {
+        Order order = requireOrder(orderId);
+        if (order.getStatus() != OrderStatus.AWAITING_PAYMENT) {
+            return;
+        }
+        history.save(order.transitionTo(OrderStatus.CONFIRMED, "payment captured", cid()));
+        events.orderConfirmed(order);
+    }
+
+    @Transactional
+    public void onPaymentFailed(UUID orderId, String reason) {
+        Order order = requireOrder(orderId);
+        if (order.getStatus() != OrderStatus.AWAITING_PAYMENT) {
+            return;
+        }
+        history.save(order.transitionTo(OrderStatus.CANCELLED, "PAYMENT_DECLINED", cid()));
+        events.orderCancelled(order, "PAYMENT_DECLINED"); // Inventory releases the reservation
+    }
+
+    /** Watchdog: an order stuck pre-confirmation past the timeout is cancelled (compensations follow). */
+    @Transactional
+    public int cancelStuckOrders(java.time.Duration timeout) {
+        var cutoff = java.time.Instant.now().minus(timeout);
+        List<Order> stuck = orders.findByStatusInAndCreatedAtBefore(
+                List.of(OrderStatus.PENDING, OrderStatus.INVENTORY_PENDING, OrderStatus.AWAITING_PAYMENT), cutoff);
+        for (Order order : stuck) {
+            history.save(order.transitionTo(OrderStatus.CANCELLED, "TIMEOUT", cid()));
+            events.orderCancelled(order, "TIMEOUT");
+            log.warn("watchdog cancelled stuck order {} (was {})", order.getId(), order.getStatus());
+        }
+        return stuck.size();
+    }
+
+    private Order requireOrder(UUID orderId) {
+        return orders.findWithItemsById(orderId)
+                .orElseThrow(() -> ResourceNotFoundException.of("Order", orderId));
     }
 
     /** Admin / internal: drives a status transition. Phase 11 replaces most callers with the Saga. */

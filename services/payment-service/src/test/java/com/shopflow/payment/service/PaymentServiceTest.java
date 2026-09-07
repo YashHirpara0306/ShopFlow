@@ -3,7 +3,6 @@ package com.shopflow.payment.service;
 import com.shopflow.common.error.ConflictException;
 import com.shopflow.common.error.ResourceNotFoundException;
 import com.shopflow.payment.domain.Payment;
-import com.shopflow.payment.event.PaymentEventPublisher;
 import com.shopflow.payment.repository.PaymentRepository;
 import com.shopflow.payment.repository.RefundRepository;
 import org.junit.jupiter.api.Test;
@@ -27,34 +26,26 @@ class PaymentServiceTest {
 
     @Mock PaymentRepository payments;
     @Mock RefundRepository refunds;
-    @Mock PaymentEventPublisher events;
 
     private final UUID orderId = UUID.randomUUID();
 
     PaymentService service(double failRate) {
-        return new PaymentService(payments, refunds, new PaymentSimulator(failRate), events);
+        return new PaymentService(payments, refunds, new PaymentSimulator(failRate));
     }
 
     @Test
     void processCapturesWhenTheSimulatorSucceeds() {
         when(payments.findByOrderId(orderId)).thenReturn(Optional.empty());
-
         var response = service(0.0).process(orderId, new BigDecimal("100.00"), "INR");
-
         assertThat(response.status()).isEqualTo("CAPTURED");
-        verify(events).paymentInitiated(any());
-        verify(events).paymentSucceeded(any());
     }
 
     @Test
     void processFailsWhenTheSimulatorDeclines() {
         when(payments.findByOrderId(orderId)).thenReturn(Optional.empty());
-
         var response = service(1.0).process(orderId, new BigDecimal("100.00"), "INR");
-
         assertThat(response.status()).isEqualTo("FAILED");
         assertThat(response.failureReason()).isEqualTo("SIMULATED_ERROR");
-        verify(events).paymentFailed(any());
     }
 
     @Test
@@ -65,7 +56,7 @@ class PaymentServiceTest {
 
         var response = service(1.0).process(orderId, new BigDecimal("50.00"), "INR");
 
-        assertThat(response.status()).isEqualTo("CAPTURED"); // not re-charged as FAILED
+        assertThat(response.status()).isEqualTo("CAPTURED");
         verify(payments, never()).saveAndFlush(any());
     }
 
