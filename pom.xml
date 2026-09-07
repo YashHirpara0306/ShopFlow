@@ -49,6 +49,8 @@
         <spring-cloud.version>2024.0.0</spring-cloud.version>
         <springdoc.version>2.7.0</springdoc.version>
         <testcontainers.version>1.20.4</testcontainers.version>
+        <jjwt.version>0.12.6</jjwt.version>
+        <logstash-logback-encoder.version>8.0</logstash-logback-encoder.version>
 
         <shopflow-common.version>0.0.1-SNAPSHOT</shopflow-common.version>
     </properties>
@@ -83,6 +85,30 @@
                 <groupId>org.springdoc</groupId>
                 <artifactId>springdoc-openapi-starter-webflux-ui</artifactId>
                 <version>${springdoc.version}</version>
+            </dependency>
+
+            <!-- JWT (jjwt). -->
+            <dependency>
+                <groupId>io.jsonwebtoken</groupId>
+                <artifactId>jjwt-api</artifactId>
+                <version>${jjwt.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.jsonwebtoken</groupId>
+                <artifactId>jjwt-impl</artifactId>
+                <version>${jjwt.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.jsonwebtoken</groupId>
+                <artifactId>jjwt-jackson</artifactId>
+                <version>${jjwt.version}</version>
+            </dependency>
+
+            <!-- Structured (JSON) logging encoder. -->
+            <dependency>
+                <groupId>net.logstash.logback</groupId>
+                <artifactId>logstash-logback-encoder</artifactId>
+                <version>${logstash-logback-encoder.version}</version>
             </dependency>
 
             <!-- Our shared library. -->
