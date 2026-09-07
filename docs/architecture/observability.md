@@ -15,7 +15,7 @@
 - Micrometer → `/actuator/prometheus` on every service (only `health`, `info`, `prometheus` are exposed).
 - Prometheus (`deploy/monitoring/prometheus/prometheus.yml`) scrapes all 8 services every 10s,
   tagged `service=<name>`.
-- Grafana (`http://localhost:3000`, anon access on) auto-provisions the datasource and the
+- Grafana (`http://localhost:3001`, anon access on) auto-provisions the datasource and the
   **ShopFlow Overview** dashboard: HTTP request rate, 5xx rate, average latency, JVM heap,
   Kafka consumer lag, product cache hit/miss.
 - Useful series out of the box: `http_server_requests_seconds_{count,sum}` (add

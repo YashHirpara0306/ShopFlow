@@ -1,0 +1,38 @@
+:root {
+  /* Primary palette (from the brand style guide) */
+  --teal: #1fb2aa; /* Viridian Green */
+  --teal-ink: #14807a;
+  --sand: #e8c9a6; /* Desert Sand */
+  --onyx: #2f3536; /* Onyx */
+
+  /* Neutrals */
+  --bg: #f5f4f2;
+  --surface: #ffffff;
+  --line: #e6e3de;
+  --line-strong: #d7d3cc;
+  --ink: #2f3536;
+  --ink-soft: #6c716f;
+  --ink-faint: #9aa09e;
+
+  /* Tinted product panels */
+  --panel-warm: #f1e8de;
+  --panel-cool: #e7f0ef;
+  --panel-grey: #efece7;
+
+  /* Type */
+  --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-serif: "Newsreader", Georgia, "Times New Roman", serif;
+
+  --label: 0.68rem;
+  --track: 0.16em;
+
+  /* Shape & motion */
+  --radius: 2px;
+  --radius-lg: 4px;
+  --shadow-sm: 0 1px 2px rgba(47, 53, 54, 0.06), 0 8px 24px rgba(47, 53, 54, 0.06);
+  --shadow-md: 0 2px 6px rgba(47, 53, 54, 0.08), 0 24px 60px rgba(47, 53, 54, 0.12);
+  --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+
+  --maxw: 1200px;
+  --gutter: 24px;
+}
