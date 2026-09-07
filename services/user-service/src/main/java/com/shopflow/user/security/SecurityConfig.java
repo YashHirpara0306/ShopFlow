@@ -1,8 +1,9 @@
 package com.shopflow.user.security;
 
-import com.shopflow.common.security.JwtValidator;
+import com.shopflow.common.security.JwtAuthenticationFilter;
+import com.shopflow.common.web.RestAccessDeniedHandler;
+import com.shopflow.common.web.RestAuthenticationEntryPoint;
 import com.shopflow.user.config.UserSecurityProperties;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -11,22 +12,12 @@ import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 /**
- * Stateless JWT security for User Service.
- *
- * <ul>
- *   <li>No sessions, no CSRF (there is no cookie/session to protect).</li>
- *   <li>{@link JwtAuthenticationFilter} runs before the username/password filter and populates the
- *       security context from the bearer token.</li>
- *   <li>Unauthenticated -&gt; {@link RestAuthenticationEntryPoint} (401); wrong role -&gt;
- *       {@link RestAccessDeniedHandler} (403); both emit the standard error body.</li>
- *   <li>Method security ({@code @PreAuthorize}) is enabled for fine-grained checks in controllers.</li>
- * </ul>
+ * Stateless JWT security for User Service. The filter, the 401/403 responders and the BCrypt encoder
+ * come from {@code shopflow-common}; this class only declares which paths are public.
  */
 @Configuration
 @EnableMethodSecurity
@@ -55,15 +46,5 @@ public class SecurityConfig {
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
-    }
-
-    @Bean
-    public JwtAuthenticationFilter jwtAuthenticationFilter(JwtValidator jwtValidator) {
-        return new JwtAuthenticationFilter(jwtValidator);
-    }
-
-    @Bean
-    public PasswordEncoder passwordEncoder(@Value("${shopflow.bcrypt-strength:12}") int strength) {
-        return new BCryptPasswordEncoder(strength);
     }
 }

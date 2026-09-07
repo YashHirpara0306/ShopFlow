@@ -1,4 +1,4 @@
-package com.shopflow.user.security;
+package com.shopflow.common.web;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.shopflow.common.error.ErrorCode;
@@ -10,12 +10,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.web.access.AccessDeniedHandler;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
 /** Emits the standard {@link ErrorResponse} JSON body when an authenticated user lacks the role (HTTP 403). */
-@Component
 public class RestAccessDeniedHandler implements AccessDeniedHandler {
 
     private final ObjectMapper objectMapper;

@@ -1,4 +1,4 @@
-package com.shopflow.user.security;
+package com.shopflow.common.web;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -12,13 +12,13 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import java.io.IOException;
 
 /**
- * Method-security ({@code @PreAuthorize}) failures are thrown <em>inside</em> the DispatcherServlet,
- * so Spring MVC's {@code @RestControllerAdvice} resolution sees them before Spring Security's
- * {@code ExceptionTranslationFilter} does. Without this, the shared {@code GlobalExceptionHandler}
- * catch-all would turn a 403 into a 500.
+ * Method-security ({@code @PreAuthorize}) failures are thrown inside the DispatcherServlet, so MVC's
+ * {@code @RestControllerAdvice} resolution sees them before Spring Security's
+ * {@code ExceptionTranslationFilter}. Without this, {@link GlobalExceptionHandler}'s catch-all would
+ * turn a 403 into a 500.
  *
- * <p>Ordered ahead of the shared handler and delegates to the same {@link RestAccessDeniedHandler} /
- * {@link RestAuthenticationEntryPoint} used for filter-level denials, so the response body is identical
+ * <p>Ordered ahead of the shared handler; delegates to the same {@link RestAccessDeniedHandler} /
+ * {@link RestAuthenticationEntryPoint} used for filter-level denials, so the body is identical
  * however the denial was raised.
  */
 @RestControllerAdvice
