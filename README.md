@@ -11,11 +11,17 @@ order workflow, Docker, Kubernetes, and CI.
 > a **stuck-Saga watchdog**, and correlation IDs on every event. Kafka support lives in
 > `shopflow-common` (ADR-0009). See [kafka-and-saga.md](docs/architecture/kafka-and-saga.md).
 > Kafka activates only when `SPRING_KAFKA_BOOTSTRAP_SERVERS` is set; without it services fall back
-> to a logging transport. **Next: Phase 12 (Redis hardening) + Phase 13 (API Gateway).**
+> to a logging transport.
+> **Phase 12** (Redis): cache-aside + TTL + jitter + invalidation (Product), Redis-only cart with
+> 503 fallback, Redis rate limiting at the gateway.
+> **Phase 13**: the [API Gateway](docs/architecture/services/api-gateway.md) — routing, edge JWT
+> verification + `X-User-*` injection/stripping, correlation IDs, secure headers, CORS, standard
+> error body. **Next: Phase 14 (security hardening) + Phase 16 (full Docker Compose).**
 > Docs: [architecture](docs/architecture/phase-01-requirements-and-architecture.md) ·
 > [conventions](docs/architecture/conventions.md) ·
 > [event catalog](docs/architecture/events/event-catalog.md) ·
-> services: [user](docs/architecture/services/user-service.md) ·
+> services: [gateway](docs/architecture/services/api-gateway.md) ·
+> [user](docs/architecture/services/user-service.md) ·
 > [product](docs/architecture/services/product-service.md) ·
 > [cart](docs/architecture/services/cart-service.md) ·
 > [order](docs/architecture/services/order-service.md) ·
