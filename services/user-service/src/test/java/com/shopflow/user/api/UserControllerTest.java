@@ -1,14 +1,15 @@
 package com.shopflow.user.api;
 
+import com.shopflow.common.security.JwtAuthenticationFilter;
 import com.shopflow.common.security.JwtPrincipal;
 import com.shopflow.common.security.JwtValidator;
 import com.shopflow.common.web.GlobalExceptionHandler;
+import com.shopflow.common.web.RestAccessDeniedHandler;
+import com.shopflow.common.web.RestAuthenticationEntryPoint;
+import com.shopflow.common.web.SecurityExceptionAdvice;
 import com.shopflow.user.domain.AppUser;
 import com.shopflow.user.domain.Role;
-import com.shopflow.user.security.RestAccessDeniedHandler;
-import com.shopflow.user.security.RestAuthenticationEntryPoint;
 import com.shopflow.user.security.SecurityConfig;
-import com.shopflow.user.security.SecurityExceptionAdvice;
 import com.shopflow.user.service.UserService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,8 +34,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(UserController.class)
-@Import({SecurityConfig.class, RestAuthenticationEntryPoint.class, RestAccessDeniedHandler.class,
-        SecurityExceptionAdvice.class, GlobalExceptionHandler.class})
+@Import({SecurityConfig.class, JwtAuthenticationFilter.class, RestAuthenticationEntryPoint.class,
+        RestAccessDeniedHandler.class, SecurityExceptionAdvice.class, GlobalExceptionHandler.class})
 class UserControllerTest {
 
     @Autowired MockMvc mvc;

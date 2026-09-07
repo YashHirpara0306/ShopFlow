@@ -4,6 +4,27 @@ server:
 spring:
   application:
     name: order-service
+  datasource:
+    url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/shopflow_order
+    username: ${POSTGRES_USER:shopflow}
+    password: ${POSTGRES_PASSWORD:shopflow}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate.jdbc.time_zone: UTC
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+shopflow:
+  jwt:
+    secret: ${JWT_SECRET:dev-only-secret-change-me-please-0123456789abcdef}
+    issuer: shopflow
+  clients:
+    cart-service:
+      base-url: ${CART_SERVICE_URI:http://localhost:8083}
 
 management:
   endpoints:

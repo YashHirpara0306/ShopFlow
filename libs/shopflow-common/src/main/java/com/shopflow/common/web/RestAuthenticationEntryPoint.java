@@ -1,4 +1,4 @@
-package com.shopflow.user.security;
+package com.shopflow.common.web;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.shopflow.common.error.ErrorCode;
@@ -10,12 +10,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.AuthenticationEntryPoint;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
 /** Emits the standard {@link ErrorResponse} JSON body for unauthenticated requests (HTTP 401). */
-@Component
 public class RestAuthenticationEntryPoint implements AuthenticationEntryPoint {
 
     private final ObjectMapper objectMapper;

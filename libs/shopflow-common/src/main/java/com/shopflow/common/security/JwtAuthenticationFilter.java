@@ -1,8 +1,5 @@
-package com.shopflow.user.security;
+package com.shopflow.common.security;
 
-import com.shopflow.common.security.InvalidTokenException;
-import com.shopflow.common.security.JwtPrincipal;
-import com.shopflow.common.security.JwtValidator;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -19,15 +16,16 @@ import java.io.IOException;
 import java.util.List;
 
 /**
- * Reads {@code Authorization: Bearer <jwt>}, validates it, and puts the resulting authentication in
- * the {@link SecurityContextHolder}. Also stamps {@code userId} into the MDC so every log line for
- * an authenticated request carries it.
+ * Reads {@code Authorization: Bearer <jwt>}, validates it with {@link JwtValidator}, and puts the
+ * resulting authentication (principal = userId string, authorities = the {@code roles} claim) in the
+ * {@link SecurityContextHolder}. Also stamps {@code userId} into the MDC for the request.
  *
- * <p>A missing or invalid token is NOT rejected here - the request proceeds unauthenticated and
- * Spring Security's entry point handles it if the target endpoint requires auth. This keeps public
- * endpoints reachable with a stale token in the header.
+ * <p>A missing/invalid token is not rejected here - the request proceeds unauthenticated and Spring
+ * Security's entry point handles it if the target endpoint requires authentication.
  *
- * <p>Phase 14 will promote this filter into {@code shopflow-common} so every service shares it.
+ * <p>Auto-registered for any service that has a {@link JwtValidator} bean (see
+ * {@code SecurityAutoConfiguration}). Each service still defines its own {@code SecurityFilterChain}
+ * with its own public paths.
  */
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 

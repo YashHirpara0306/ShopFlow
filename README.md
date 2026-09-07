@@ -4,15 +4,18 @@ An event-driven e-commerce backend built as a production-style portfolio project
 Spring Boot 3 microservices, PostgreSQL, Redis, Apache Kafka, an orchestrated Saga for the
 order workflow, Docker, Kubernetes, and CI.
 
-> **Project status: Phase 4 of 22 — User Service.**
-> `shopflow-common` carries the shared conventions (event envelope, error handling, correlation-id
-> + structured logging, JWT). **User Service** is implemented: register / login / refresh (with
-> rotation + reuse detection) / logout / profile / roles, BCrypt, Flyway, Spring Security, OpenAPI,
-> Testcontainers integration tests.
+> **Project status: Phase 7 of 22 — Order Service (pre-Kafka).**
+> Implemented so far: **User** (auth, JWT, refresh rotation), **Product** (CRUD, search/filter,
+> Redis cache-aside), **Cart** (Redis-only, priced), **Order** (idempotent creation, lifecycle
+> state machine, history, cancellation). Shared security lives in `shopflow-common` (ADR-0008).
+> Kafka + the orchestrated Saga arrive in Phase 11.
 > Docs: [architecture](docs/architecture/phase-01-requirements-and-architecture.md) ·
 > [conventions](docs/architecture/conventions.md) ·
 > [event catalog](docs/architecture/events/event-catalog.md) ·
-> [user-service](docs/architecture/services/user-service.md) ·
+> services: [user](docs/architecture/services/user-service.md) ·
+> [product](docs/architecture/services/product-service.md) ·
+> [cart](docs/architecture/services/cart-service.md) ·
+> [order](docs/architecture/services/order-service.md) ·
 > [ADRs](docs/architecture/adr/README.md).
 
 ## Services
