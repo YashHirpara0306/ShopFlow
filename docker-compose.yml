@@ -1,19 +1,37 @@
-# ShopFlow local infrastructure.
+# ShopFlow - full local stack.
 #
-# Phase 2 scope: the stateful backing services only (Postgres, Redis, Kafka).
-# The 8 application services are added to this file in Phase 16 once their Dockerfiles
-# are finalised. Prometheus + Grafana are added in Phase 17.
-#
-# Usage:
 #   cp .env.example .env
-#   docker compose up -d
-#   docker compose ps
-#   docker compose down            # keep data
-#   docker compose down -v         # wipe data
+#   mvn -DskipTests package          # build the service jars the images copy in
+#   docker compose up -d --build
+#   docker compose ps               # wait for all "healthy"
+#   ./scripts/smoke.sh              # register -> browse -> cart -> order -> confirmed
+#
+#   docker compose down             # keep data
+#   docker compose down -v          # wipe data
+#
+# First image build downloads dependencies inside the builder stage and takes a while.
 
 name: shopflow
 
+x-service-env: &service-env
+  POSTGRES_HOST: postgres
+  POSTGRES_PORT: "5432"
+  POSTGRES_USER: ${POSTGRES_USER:-shopflow}
+  POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-shopflow}
+  REDIS_HOST: redis
+  REDIS_PORT: "6379"
+  SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+  JWT_SECRET: ${JWT_SECRET:-dev-only-secret-change-me-please-0123456789abcdef}
+  SPRING_PROFILES_ACTIVE: docker
+
+x-healthcheck: &health
+  interval: 15s
+  timeout: 5s
+  retries: 10
+  start_period: 40s
+
 services:
+  # ---------------- infrastructure ----------------
   postgres:
     image: postgres:16-alpine
     container_name: shopflow-postgres
@@ -21,57 +39,175 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-shopflow}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-shopflow}
       POSTGRES_DB: shopflow
-    ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+    ports: ["${POSTGRES_PORT:-5432}:5432"]
     volumes:
       - postgres-data:/var/lib/postgresql/data
       - ./deploy/docker/postgres/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-shopflow} -d shopflow"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      <<: *health
 
   redis:
     image: redis:7-alpine
     container_name: shopflow-redis
     command: ["redis-server", "--save", "60", "1", "--loglevel", "warning"]
-    ports:
-      - "${REDIS_PORT:-6379}:6379"
-    volumes:
-      - redis-data:/data
+    ports: ["${REDIS_PORT:-6379}:6379"]
+    volumes: ["redis-data:/data"]
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      <<: *health
 
   kafka:
     image: apache/kafka:3.8.0
     container_name: shopflow-kafka
     ports:
-      - "9092:9092"
+      - "29092:29092"   # host access
     environment:
-      # Single-node KRaft (no ZooKeeper). Fine for local dev; replication factor 1.
       KAFKA_NODE_ID: 1
       KAFKA_PROCESS_ROLES: broker,controller
       KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9093
-      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093,PLAINTEXT_HOST://0.0.0.0:29092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
       KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
-      # Topics are created explicitly in Phase 11, never implicitly.
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
     healthcheck:
       test: ["CMD-SHELL", "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092 >/dev/null 2>&1 || exit 1"]
-      interval: 15s
-      timeout: 10s
-      retries: 10
+      <<: *health
+
+  prometheus:
+    image: prom/prometheus:v3.1.0
+    container_name: shopflow-prometheus
+    command: ["--config.file=/etc/prometheus/prometheus.yml"]
+    ports: ["9090:9090"]
+    volumes:
+      - ./deploy/monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    depends_on: [api-gateway]
+
+  grafana:
+    image: grafana/grafana:11.4.0
+    container_name: shopflow-grafana
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin}
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+    ports: ["3000:3000"]
+    volumes:
+      - ./deploy/monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./deploy/monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    depends_on: [prometheus]
+
+  # ---------------- application services ----------------
+  api-gateway:
+    build: {context: ., dockerfile: services/api-gateway/Dockerfile}
+    container_name: shopflow-api-gateway
+    environment:
+      <<: *service-env
+      USER_SERVICE_URI: http://user-service:8081
+      PRODUCT_SERVICE_URI: http://product-service:8082
+      CART_SERVICE_URI: http://cart-service:8083
+      ORDER_SERVICE_URI: http://order-service:8084
+      INVENTORY_SERVICE_URI: http://inventory-service:8085
+      PAYMENT_SERVICE_URI: http://payment-service:8086
+      NOTIFICATION_SERVICE_URI: http://notification-service:8087
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000}
+    ports: ["8080:8080"]
+    depends_on:
+      redis: {condition: service_healthy}
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:8080/actuator/health || exit 1"]
+      <<: *health
+
+  user-service:
+    build: {context: ., dockerfile: services/user-service/Dockerfile}
+    container_name: shopflow-user-service
+    environment:
+      <<: *service-env
+      BOOTSTRAP_ADMIN_EMAILS: ${BOOTSTRAP_ADMIN_EMAILS:-admin@shopflow.local}
+    depends_on:
+      postgres: {condition: service_healthy}
+      kafka: {condition: service_healthy}
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:8081/actuator/health || exit 1"]
+      <<: *health
+
+  product-service:
+    build: {context: ., dockerfile: services/product-service/Dockerfile}
+    container_name: shopflow-product-service
+    environment:
+      <<: *service-env
+      INVENTORY_SERVICE_URI: http://inventory-service:8085
+    depends_on:
+      postgres: {condition: service_healthy}
+      redis: {condition: service_healthy}
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:8082/actuator/health || exit 1"]
+      <<: *health
+
+  cart-service:
+    build: {context: ., dockerfile: services/cart-service/Dockerfile}
+    container_name: shopflow-cart-service
+    environment:
+      <<: *service-env
+      PRODUCT_SERVICE_URI: http://product-service:8082
+    depends_on:
+      redis: {condition: service_healthy}
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:8083/actuator/health || exit 1"]
+      <<: *health
+
+  order-service:
+    build: {context: ., dockerfile: services/order-service/Dockerfile}
+    container_name: shopflow-order-service
+    environment:
+      <<: *service-env
+      CART_SERVICE_URI: http://cart-service:8083
+    depends_on:
+      postgres: {condition: service_healthy}
+      kafka: {condition: service_healthy}
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:8084/actuator/health || exit 1"]
+      <<: *health
+
+  inventory-service:
+    build: {context: ., dockerfile: services/inventory-service/Dockerfile}
+    container_name: shopflow-inventory-service
+    environment: {<<: *service-env}
+    depends_on:
+      postgres: {condition: service_healthy}
+      kafka: {condition: service_healthy}
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:8085/actuator/health || exit 1"]
+      <<: *health
+
+  payment-service:
+    build: {context: ., dockerfile: services/payment-service/Dockerfile}
+    container_name: shopflow-payment-service
+    environment:
+      <<: *service-env
+      PAYMENT_FAIL_RATE: ${PAYMENT_FAIL_RATE:-0.1}
+    depends_on:
+      postgres: {condition: service_healthy}
+      kafka: {condition: service_healthy}
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:8086/actuator/health || exit 1"]
+      <<: *health
+
+  notification-service:
+    build: {context: ., dockerfile: services/notification-service/Dockerfile}
+    container_name: shopflow-notification-service
+    environment: {<<: *service-env}
+    depends_on:
+      postgres: {condition: service_healthy}
+      kafka: {condition: service_healthy}
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:8087/actuator/health || exit 1"]
+      <<: *health
 
 volumes:
   postgres-data:

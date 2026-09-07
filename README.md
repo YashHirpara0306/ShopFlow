@@ -16,7 +16,12 @@ order workflow, Docker, Kubernetes, and CI.
 > 503 fallback, Redis rate limiting at the gateway.
 > **Phase 13**: the [API Gateway](docs/architecture/services/api-gateway.md) — routing, edge JWT
 > verification + `X-User-*` injection/stripping, correlation IDs, secure headers, CORS, standard
-> error body. **Next: Phase 14 (security hardening) + Phase 16 (full Docker Compose).**
+> error body.
+> **Phase 14** ([security posture](docs/architecture/security.md)): consolidated; adds a refresh-token
+> cleanup job. **Phase 16**: full `docker compose up` (8 services + infra + Prometheus + Grafana) with
+> a [smoke script](scripts/smoke.sh). **Phase 17** ([observability](docs/architecture/observability.md)):
+> Prometheus scrape + Grafana dashboard + [runbooks](docs/runbooks/).
+> **Next: Phase 15 (test-gap pass) + 18 (CI/CD) + 19–20 (K8s/AWS) + 21–22 (perf, final docs & résumé).**
 > Docs: [architecture](docs/architecture/phase-01-requirements-and-architecture.md) ·
 > [conventions](docs/architecture/conventions.md) ·
 > [event catalog](docs/architecture/events/event-catalog.md) ·
@@ -74,33 +79,36 @@ shopflow/
   then open a new terminal. (Optional: `mvn -N wrapper:wrapper` in the repo root to add `./mvnw`.)
 - **Docker Desktop** — only needed for `docker compose` and for integration tests (added from Phase 4).
 
-## How to run (Phase 2)
+## How to run
 
-Build and unit-test everything:
-
-```bash
-mvn -B -ntp verify
-```
-
-Start the infrastructure:
+### Everything, in Docker
 
 ```bash
 cp .env.example .env
-docker compose up -d
-docker compose ps          # postgres, redis, kafka should all be "healthy"
+mvn -DskipTests package        # build the service jars the images copy in
+docker compose up -d --build   # 8 services + Postgres + Redis + Kafka + Prometheus + Grafana
+docker compose ps              # wait for all "healthy" (first build downloads deps; give it time)
+./scripts/smoke.sh             # register → browse → cart → order → CONFIRMED  (needs curl + jq)
 ```
 
-Run a single service (example):
+- Gateway: `http://localhost:8080` · Prometheus: `:9090` · Grafana: `:3000` (anon)
+- `docker compose logs -f order-service` — JSON logs with `correlationId`
+- `docker compose down` (keep data) · `docker compose down -v` (wipe)
+
+### Build & test the code
 
 ```bash
+mvn -B -ntp verify             # unit + slice + Testcontainers integration tests
+mvn -B -ntp -DskipITs verify   # skip the Docker-based integration tests
+```
+
+### One service against local infra
+
+```bash
+docker compose up -d postgres redis kafka
+export SPRING_KAFKA_BOOTSTRAP_SERVERS=localhost:29092   # host access to the compose Kafka
 mvn -pl services/user-service -am spring-boot:run
-# then: curl http://localhost:8081/actuator/health   ->  {"status":"UP"}
-```
-
-Stop infrastructure (keep data with plain `down`, wipe with `-v`):
-
-```bash
-docker compose down
+curl http://localhost:8081/actuator/health
 ```
 
 ## Behind a TLS-intercepting antivirus/proxy (AVG, Kaspersky, corporate MITM)
