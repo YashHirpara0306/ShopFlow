@@ -17,6 +17,10 @@ spring:
   flyway:
     enabled: true
     locations: classpath:db/migration
+  kafka:
+    # activated only when SPRING_KAFKA_BOOTSTRAP_SERVERS is set (compose / tests)
+    consumer:
+      auto-offset-reset: earliest
 
 shopflow:
   jwt:

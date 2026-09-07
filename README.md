@@ -4,12 +4,14 @@ An event-driven e-commerce backend built as a production-style portfolio project
 Spring Boot 3 microservices, PostgreSQL, Redis, Apache Kafka, an orchestrated Saga for the
 order workflow, Docker, Kubernetes, and CI.
 
-> **Project status: Phase 10 of 22 — all seven services built in isolation (pre-Kafka).**
-> **User** (auth, JWT, refresh rotation) · **Product** (CRUD, search/filter, Redis cache-aside) ·
-> **Cart** (Redis-only, priced) · **Order** (idempotent creation, lifecycle state machine, history) ·
-> **Inventory** (atomic oversell-safe reserve/release/confirm) · **Payment** (idempotent simulated
-> charges + refunds) · **Notification** (simulated send, idempotent per event, retry job).
-> Shared security in `shopflow-common` (ADR-0008). **Next: Phase 11 wires Kafka + the orchestrated Saga.**
+> **Project status: Phase 11 of 22 — Kafka + the orchestrated Saga are wired.**
+> All 7 services (**User, Product, Cart, Order, Inventory, Payment, Notification**) plus the full
+> order Saga over Kafka: Order Service orchestrates (reserve → pay → confirm / compensate) with a
+> **transactional outbox**, consumer idempotency (`processed_event`), retry + **dead-letter topics**,
+> a **stuck-Saga watchdog**, and correlation IDs on every event. Kafka support lives in
+> `shopflow-common` (ADR-0009). See [kafka-and-saga.md](docs/architecture/kafka-and-saga.md).
+> Kafka activates only when `SPRING_KAFKA_BOOTSTRAP_SERVERS` is set; without it services fall back
+> to a logging transport. **Next: Phase 12 (Redis hardening) + Phase 13 (API Gateway).**
 > Docs: [architecture](docs/architecture/phase-01-requirements-and-architecture.md) ·
 > [conventions](docs/architecture/conventions.md) ·
 > [event catalog](docs/architecture/events/event-catalog.md) ·
@@ -20,6 +22,7 @@ order workflow, Docker, Kubernetes, and CI.
 > [inventory](docs/architecture/services/inventory-service.md) ·
 > [payment](docs/architecture/services/payment-service.md) ·
 > [notification](docs/architecture/services/notification-service.md) ·
+> [kafka & saga](docs/architecture/kafka-and-saga.md) ·
 > [ADRs](docs/architecture/adr/README.md).
 
 ## Services

@@ -75,11 +75,11 @@ class OrderServiceTest {
 
         var response = service().create(userId, "k1", "Bearer tok");
 
-        assertThat(response.status()).isEqualTo("PENDING");
+        assertThat(response.status()).isEqualTo("INVENTORY_PENDING"); // created PENDING, then advanced
         assertThat(response.totalAmount()).isEqualByComparingTo("100.00");
         verify(idempotencyKeys).saveAndFlush(any(IdempotencyKey.class));
         verify(orders).save(any(Order.class));
-        verify(history).save(any());
+        verify(history, org.mockito.Mockito.atLeastOnce()).save(any());
         verify(events).orderCreated(any());
         verify(cartClient).clear("Bearer tok");
     }

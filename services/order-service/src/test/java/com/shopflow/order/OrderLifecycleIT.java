@@ -100,16 +100,13 @@ class OrderLifecycleIT {
     }
 
     @Test
-    void createSnapshotsTheCartAndStartsInPending() throws Exception {
+    void createSnapshotsTheCartAndAdvancesToInventoryPending() throws Exception {
         JsonNode order = createOrder("k-1");
-        assertOrder(order);
-    }
-
-    private void assertOrder(JsonNode order) {
-        org.assertj.core.api.Assertions.assertThat(order.get("status").asText()).isEqualTo("PENDING");
+        // create writes PENDING + ORDER_CREATED to the outbox, then advances to INVENTORY_PENDING (2 history rows)
+        org.assertj.core.api.Assertions.assertThat(order.get("status").asText()).isEqualTo("INVENTORY_PENDING");
         org.assertj.core.api.Assertions.assertThat(order.get("totalAmount").asDouble()).isEqualTo(100.0);
         org.assertj.core.api.Assertions.assertThat(order.get("items")).hasSize(1);
-        org.assertj.core.api.Assertions.assertThat(order.get("history")).hasSize(1);
+        org.assertj.core.api.Assertions.assertThat(order.get("history")).hasSize(2);
     }
 
     @Test
@@ -163,10 +160,9 @@ class OrderLifecycleIT {
 
     @Test
     void adminCanWalkTheStateMachineButNotJumpIllegally() throws Exception {
-        String id = createOrder("k-7").get("id").asText();
+        String id = createOrder("k-7").get("id").asText(); // already INVENTORY_PENDING after create
         String admin = auth(otherUserId, "ROLE_ADMIN");
 
-        step(id, admin, "INVENTORY_PENDING");
         step(id, admin, "AWAITING_PAYMENT");
         step(id, admin, "CONFIRMED");
 

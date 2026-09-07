@@ -6,6 +6,7 @@ import com.shopflow.inventory.api.dto.ReserveRequest;
 import com.shopflow.inventory.api.dto.SetStockRequest;
 import com.shopflow.inventory.api.dto.StockResponse;
 import com.shopflow.inventory.service.InventoryService;
+import com.shopflow.inventory.service.ReservationFailedException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -63,7 +64,12 @@ public class InventoryController {
     @ResponseStatus(HttpStatus.CREATED)
     @Operation(summary = "Reserve stock for an order (all-or-nothing, idempotent per orderId)")
     public ReservationResponse reserve(@Valid @RequestBody ReserveRequest request) {
-        return inventoryService.reserve(request.orderId(), InventoryService.toQuantityMap(request.lines()));
+        InventoryService.ReservationOutcome outcome =
+                inventoryService.reserve(request.orderId(), InventoryService.toQuantityMap(request.lines()));
+        if (!outcome.reserved()) {
+            throw new ReservationFailedException("Insufficient stock for: " + String.join(", ", outcome.shortages()));
+        }
+        return outcome.reservation();
     }
 
     @PostMapping("/reservations/{orderId}/release")

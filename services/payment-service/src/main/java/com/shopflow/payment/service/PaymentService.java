@@ -6,7 +6,6 @@ import com.shopflow.payment.api.dto.PaymentResponse;
 import com.shopflow.payment.api.dto.RefundResponse;
 import com.shopflow.payment.domain.Payment;
 import com.shopflow.payment.domain.Refund;
-import com.shopflow.payment.event.PaymentEventPublisher;
 import com.shopflow.payment.repository.PaymentRepository;
 import com.shopflow.payment.repository.RefundRepository;
 import org.slf4j.Logger;
@@ -26,27 +25,19 @@ public class PaymentService {
     private final PaymentRepository payments;
     private final RefundRepository refunds;
     private final PaymentSimulator simulator;
-    private final PaymentEventPublisher events;
 
-    public PaymentService(PaymentRepository payments,
-                          RefundRepository refunds,
-                          PaymentSimulator simulator,
-                          PaymentEventPublisher events) {
+    public PaymentService(PaymentRepository payments, RefundRepository refunds, PaymentSimulator simulator) {
         this.payments = payments;
         this.refunds = refunds;
         this.simulator = simulator;
-        this.events = events;
     }
 
-    /**
-     * Idempotent per {@code orderId} (unique constraint). A duplicate request returns the existing
-     * payment's outcome - never a second charge.
-     */
+    /** Idempotent per {@code orderId} ({@code payment.order_id} UNIQUE). A duplicate returns the existing outcome. */
     @Transactional
     public PaymentResponse process(UUID orderId, BigDecimal amount, String currency) {
         Payment existing = payments.findByOrderId(orderId).orElse(null);
         if (existing != null) {
-            return toResponse(existing); // replay
+            return toResponse(existing);
         }
 
         Payment payment = Payment.initiated(orderId, amount, currency);
@@ -55,16 +46,13 @@ public class PaymentService {
         } catch (DataIntegrityViolationException race) {
             return toResponse(payments.findByOrderId(orderId).orElseThrow());
         }
-        events.paymentInitiated(payment);
 
         PaymentSimulator.Outcome outcome = simulator.charge(amount);
         if (outcome.success()) {
             payment.capture(outcome.providerRef());
-            events.paymentSucceeded(payment);
             log.info("payment captured orderId={} paymentId={} amount={}", orderId, payment.getId(), amount);
         } else {
             payment.fail(outcome.reason());
-            events.paymentFailed(payment);
             log.info("payment failed orderId={} paymentId={} reason={}", orderId, payment.getId(), outcome.reason());
         }
         return toResponse(payment);
@@ -81,7 +69,7 @@ public class PaymentService {
     public RefundResponse refund(UUID orderId, String reason) {
         Refund existing = refunds.findByOrderId(orderId).orElse(null);
         if (existing != null) {
-            return toResponse(existing); // replay
+            return toResponse(existing);
         }
         Payment payment = payments.findByOrderId(orderId)
                 .orElseThrow(() -> ResourceNotFoundException.of("Payment for order", orderId));
@@ -95,7 +83,6 @@ public class PaymentService {
         } catch (DataIntegrityViolationException race) {
             return toResponse(refunds.findByOrderId(orderId).orElseThrow());
         }
-        events.refundCompleted(orderId, payment.getId(), payment.getAmount());
         log.info("refund completed orderId={} amount={}", orderId, payment.getAmount());
         return toResponse(refund);
     }

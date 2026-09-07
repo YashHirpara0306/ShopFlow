@@ -17,6 +17,12 @@ spring:
   flyway:
     enabled: true
     locations: classpath:db/migration
+  kafka:
+    # spring.kafka.bootstrap-servers is intentionally NOT set here. Kafka wiring (producers,
+    # listeners, outbox relay) activates only when it is provided, via the environment variable
+    # SPRING_KAFKA_BOOTSTRAP_SERVERS (docker compose) or @TestPropertySource (Saga integration tests).
+    consumer:
+      auto-offset-reset: earliest
 
 shopflow:
   jwt:
@@ -25,6 +31,11 @@ shopflow:
   clients:
     cart-service:
       base-url: ${CART_SERVICE_URI:http://localhost:8083}
+  order:
+    saga-timeout: 5m
+    watchdog-interval: 60s
+  outbox:
+    relay-interval: 1s
 
 management:
   endpoints:
