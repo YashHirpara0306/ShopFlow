@@ -6,6 +6,8 @@
 #   docker compose ps               # wait for all "healthy"
 #   ./scripts/smoke.sh              # register -> browse -> cart -> order -> confirmed
 #
+#   storefront  http://localhost:3000   ·  gateway :8080  ·  Prometheus :9090  ·  Grafana :3001
+#
 #   docker compose down             # keep data
 #   docker compose down -v          # wipe data
 #
@@ -96,11 +98,22 @@ services:
       GF_SECURITY_ADMIN_USER: ${GRAFANA_USER:-admin}
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin}
       GF_AUTH_ANONYMOUS_ENABLED: "true"
-    ports: ["3000:3000"]
+    ports: ["3001:3000"]   # 3000 is the storefront
     volumes:
       - ./deploy/monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
       - ./deploy/monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
     depends_on: [prometheus]
+
+  # ---------------- storefront ----------------
+  frontend:
+    build: {context: ./frontend, dockerfile: Dockerfile}
+    container_name: shopflow-frontend
+    ports: ["3000:80"]
+    depends_on:
+      api-gateway: {condition: service_healthy}
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost/health || exit 1"]
+      <<: *health
 
   # ---------------- application services ----------------
   api-gateway:

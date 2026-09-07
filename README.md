@@ -4,11 +4,13 @@ An event-driven e-commerce backend built as a production-style portfolio project
 Spring Boot 3 microservices, PostgreSQL, Redis, Apache Kafka, an orchestrated Saga for the
 order workflow, Docker, Kubernetes, and CI.
 
-> **All 22 build phases complete.** 8 services + an orchestrated order Saga over Kafka, run with one
-> `docker compose up`. See **[FINAL_CHECKLIST.md](docs/FINAL_CHECKLIST.md)** for the quality bar
-> (and where "verified in CI" vs "run locally" applies), and
-> **[docs/resume/](docs/resume/README.md)** for the résumé bullets, 2- / 10-minute pitches, and
-> 40 interview Q&A.
+> **All 22 build phases complete**, plus a **[React storefront](frontend/)** (`frontend/`) — a
+> Rebt-branded shop (home, catalogue + search/filter, product detail, cart, checkout, live
+> order-status timeline, account, admin product/inventory screens) wired to the gateway. 8 services +
+> an orchestrated order Saga over Kafka, all run with one `docker compose up`.
+> See **[FINAL_CHECKLIST.md](docs/FINAL_CHECKLIST.md)** for the quality bar (and where "verified in
+> CI" vs "run locally" applies), and **[docs/resume/](docs/resume/README.md)** for the résumé
+> bullets, 2- / 10-minute pitches, and 40 interview Q&A.
 >
 > **Not production-ready, and it doesn't claim to be** — it's *production-style*: the patterns are
 > real and tested. Simulated payment + email; no real distributed tracing; single-replica infra
@@ -93,12 +95,12 @@ shopflow/
 ```bash
 cp .env.example .env
 mvn -DskipTests package        # build the service jars the images copy in
-docker compose up -d --build   # 8 services + Postgres + Redis + Kafka + Prometheus + Grafana
+docker compose up -d --build   # storefront + 8 services + Postgres + Redis + Kafka + Prometheus + Grafana
 docker compose ps              # wait for all "healthy" (first build downloads deps; give it time)
 ./scripts/smoke.sh             # register → browse → cart → order → CONFIRMED  (needs curl + jq)
 ```
 
-- Gateway: `http://localhost:8080` · Prometheus: `:9090` · Grafana: `:3000` (anon)
+- **Storefront: `http://localhost:3000`** (React) · Gateway: `:8080` · Prometheus: `:9090` · Grafana: `:3001` (anon)
 - `docker compose logs -f order-service` — JSON logs with `correlationId`
 - `docker compose down` (keep data) · `docker compose down -v` (wipe)
 

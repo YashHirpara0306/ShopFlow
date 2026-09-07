@@ -4,7 +4,7 @@ Brought up by `docker compose up` alongside the services.
 
 - **Prometheus** — `http://localhost:9090`. Config: `prometheus/prometheus.yml` (scrapes every
   service's `/actuator/prometheus` every 10s, tagged `service`).
-- **Grafana** — `http://localhost:3000` (anonymous viewer enabled; admin `admin`/`admin`).
+- **Grafana** — `http://localhost:3001` (anonymous viewer enabled; admin `admin`/`admin`).
   Auto-provisions the Prometheus datasource (`grafana/provisioning/datasources`) and the
   **ShopFlow Overview** dashboard (`grafana/dashboards/shopflow-overview.json`,
   loaded via `grafana/provisioning/dashboards`).
