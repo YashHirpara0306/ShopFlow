@@ -21,7 +21,11 @@ order workflow, Docker, Kubernetes, and CI.
 > cleanup job. **Phase 16**: full `docker compose up` (8 services + infra + Prometheus + Grafana) with
 > a [smoke script](scripts/smoke.sh). **Phase 17** ([observability](docs/architecture/observability.md)):
 > Prometheus scrape + Grafana dashboard + [runbooks](docs/runbooks/).
-> **Next: Phase 15 (test-gap pass) + 18 (CI/CD) + 19–20 (K8s/AWS) + 21–22 (perf, final docs & résumé).**
+> **Phase 18** ([CI/CD](docs/architecture/cicd.md)): two-stage GitHub Actions (fast unit → Testcontainers
+> integration) + a matrix image-publish workflow to GHCR.
+> **Phases 19–20**: [Kubernetes](deploy/k8s/) (kustomize base: infra + 8 services + Ingress + HPA) and an
+> [AWS guide](deploy/aws/README.md) (EC2-cheap and Fargate+RDS paths, component map, IAM, teardown).
+> **Next: Phase 15 (test-gap pass) + 21 (perf & failure) + 22 (system-design doc + résumé pack).**
 > Docs: [architecture](docs/architecture/phase-01-requirements-and-architecture.md) ·
 > [conventions](docs/architecture/conventions.md) ·
 > [event catalog](docs/architecture/events/event-catalog.md) ·
