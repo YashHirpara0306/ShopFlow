@@ -4,41 +4,44 @@ An event-driven e-commerce backend built as a production-style portfolio project
 Spring Boot 3 microservices, PostgreSQL, Redis, Apache Kafka, an orchestrated Saga for the
 order workflow, Docker, Kubernetes, and CI.
 
-> **Project status: Phase 11 of 22 — Kafka + the orchestrated Saga are wired.**
-> All 7 services (**User, Product, Cart, Order, Inventory, Payment, Notification**) plus the full
-> order Saga over Kafka: Order Service orchestrates (reserve → pay → confirm / compensate) with a
-> **transactional outbox**, consumer idempotency (`processed_event`), retry + **dead-letter topics**,
-> a **stuck-Saga watchdog**, and correlation IDs on every event. Kafka support lives in
-> `shopflow-common` (ADR-0009). See [kafka-and-saga.md](docs/architecture/kafka-and-saga.md).
-> Kafka activates only when `SPRING_KAFKA_BOOTSTRAP_SERVERS` is set; without it services fall back
-> to a logging transport.
-> **Phase 12** (Redis): cache-aside + TTL + jitter + invalidation (Product), Redis-only cart with
-> 503 fallback, Redis rate limiting at the gateway.
-> **Phase 13**: the [API Gateway](docs/architecture/services/api-gateway.md) — routing, edge JWT
-> verification + `X-User-*` injection/stripping, correlation IDs, secure headers, CORS, standard
-> error body.
-> **Phase 14** ([security posture](docs/architecture/security.md)): consolidated; adds a refresh-token
-> cleanup job. **Phase 16**: full `docker compose up` (8 services + infra + Prometheus + Grafana) with
-> a [smoke script](scripts/smoke.sh). **Phase 17** ([observability](docs/architecture/observability.md)):
-> Prometheus scrape + Grafana dashboard + [runbooks](docs/runbooks/).
-> **Phase 18** ([CI/CD](docs/architecture/cicd.md)): two-stage GitHub Actions (fast unit → Testcontainers
-> integration) + a matrix image-publish workflow to GHCR.
-> **Phases 19–20**: [Kubernetes](deploy/k8s/) (kustomize base: infra + 8 services + Ingress + HPA) and an
-> [AWS guide](deploy/aws/README.md) (EC2-cheap and Fargate+RDS paths, component map, IAM, teardown).
-> **Next: Phase 15 (test-gap pass) + 21 (perf & failure) + 22 (system-design doc + résumé pack).**
-> Docs: [architecture](docs/architecture/phase-01-requirements-and-architecture.md) ·
-> [conventions](docs/architecture/conventions.md) ·
-> [event catalog](docs/architecture/events/event-catalog.md) ·
-> services: [gateway](docs/architecture/services/api-gateway.md) ·
-> [user](docs/architecture/services/user-service.md) ·
-> [product](docs/architecture/services/product-service.md) ·
-> [cart](docs/architecture/services/cart-service.md) ·
-> [order](docs/architecture/services/order-service.md) ·
-> [inventory](docs/architecture/services/inventory-service.md) ·
-> [payment](docs/architecture/services/payment-service.md) ·
-> [notification](docs/architecture/services/notification-service.md) ·
-> [kafka & saga](docs/architecture/kafka-and-saga.md) ·
-> [ADRs](docs/architecture/adr/README.md).
+> **All 22 build phases complete.** 8 services + an orchestrated order Saga over Kafka, run with one
+> `docker compose up`. See **[FINAL_CHECKLIST.md](docs/FINAL_CHECKLIST.md)** for the quality bar
+> (and where "verified in CI" vs "run locally" applies), and
+> **[docs/resume/](docs/resume/README.md)** for the résumé bullets, 2- / 10-minute pitches, and
+> 40 interview Q&A.
+>
+> **Not production-ready, and it doesn't claim to be** — it's *production-style*: the patterns are
+> real and tested. Simulated payment + email; no real distributed tracing; single-replica infra
+> locally. Full caveats in [security.md](docs/architecture/security.md) and
+> [performance.md](docs/architecture/performance.md).
+
+## What it demonstrates
+
+Orchestrated **Saga** (reserve inventory → charge payment → confirm / compensate) · **transactional
+outbox** · consumer **idempotency** (`processed_event`, `Idempotency-Key`, unique constraints, state
+guards) · retry + **dead-letter topics** · **stuck-Saga watchdog** · oversell-safe concurrency
+(atomic conditional `UPDATE`) · **cache-aside** with TTL jitter + invalidation · Redis-native cart ·
+stateless **JWT** verified at the edge and per-service · **rotating refresh tokens with reuse
+detection** · edge **rate limiting** · **correlation IDs** on every request, event, and JSON log line
+· one shared Spring Boot **auto-configuration** starter · **Testcontainers** ITs (Postgres/Redis/Kafka)
+including the full Saga · two-stage **GitHub Actions** · **Kubernetes** kustomize base · **AWS**
+deployment guide · **Prometheus + Grafana** + runbooks.
+
+## Documentation
+
+- **[SYSTEM_DESIGN.md](docs/architecture/SYSTEM_DESIGN.md)** — the consolidated 14-topic design.
+- **[Phase 1](docs/architecture/phase-01-requirements-and-architecture.md)** — full requirements & architecture.
+- [conventions](docs/architecture/conventions.md) · [event catalog](docs/architecture/events/event-catalog.md) ·
+  [kafka & saga](docs/architecture/kafka-and-saga.md) · [security](docs/architecture/security.md) ·
+  [observability](docs/architecture/observability.md) · [performance](docs/architecture/performance.md) ·
+  [failure scenarios](docs/architecture/failure-scenarios.md) · [testing](docs/architecture/testing.md) ·
+  [CI/CD](docs/architecture/cicd.md) · [ADRs](docs/architecture/adr/README.md) · [runbooks](docs/runbooks/)
+- Per service: [gateway](docs/architecture/services/api-gateway.md) ·
+  [user](docs/architecture/services/user-service.md) · [product](docs/architecture/services/product-service.md) ·
+  [cart](docs/architecture/services/cart-service.md) · [order](docs/architecture/services/order-service.md) ·
+  [inventory](docs/architecture/services/inventory-service.md) · [payment](docs/architecture/services/payment-service.md) ·
+  [notification](docs/architecture/services/notification-service.md)
+- Deploy: [Docker Compose](docker-compose.yml) · [Kubernetes](deploy/k8s/) · [AWS](deploy/aws/README.md) · [monitoring](deploy/monitoring/)
 
 ## Services
 
