@@ -43,7 +43,7 @@ public class ProductService {
     }
 
     @Transactional
-    public ProductResponse create(CreateProductRequest request) {
+    public ProductResponse create(CreateProductRequest request, String bearerToken) {
         Category category = categories.findById(request.categoryId())
                 .orElseThrow(() -> ResourceNotFoundException.of("Category", request.categoryId()));
         if (products.existsBySkuIgnoreCase(request.sku().trim())) {
@@ -59,7 +59,7 @@ public class ProductService {
         }
 
         // ADR-0005: give Inventory a stock row (at 0) via REST, not an event.
-        inventoryClient.registerNewProduct(product.getId(), product.getSku());
+        inventoryClient.registerNewProduct(product.getId(), product.getSku(), bearerToken);
         log.info("product created id={} sku={}", product.getId(), product.getSku());
         return ProductMapper.toResponse(product);
     }

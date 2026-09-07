@@ -101,7 +101,7 @@ class ProductControllerTest {
     @Test
     void createSucceedsForAdmin() throws Exception {
         adminToken("atok");
-        when(productService.create(any())).thenReturn(sample());
+        when(productService.create(any(), any())).thenReturn(sample());
 
         mvc.perform(post("/api/products").header("Authorization", "Bearer atok")
                         .contentType(MediaType.APPLICATION_JSON)
