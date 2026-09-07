@@ -1,5 +1,6 @@
 package com.shopflow.common.config;
 
+import com.shopflow.common.security.JwtIssuer;
 import com.shopflow.common.security.JwtProperties;
 import com.shopflow.common.security.JwtValidator;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -26,5 +27,15 @@ public class JwtAutoConfiguration {
     @ConditionalOnMissingBean
     public JwtValidator jwtValidator(JwtProperties properties) {
         return new JwtValidator(properties);
+    }
+
+    /**
+     * Only the service that issues tokens (User Service) actually injects this, but exposing it
+     * here keeps issuing and validating configured from the same properties.
+     */
+    @Bean
+    @ConditionalOnMissingBean
+    public JwtIssuer jwtIssuer(JwtProperties properties) {
+        return new JwtIssuer(properties);
     }
 }

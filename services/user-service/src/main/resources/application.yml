@@ -4,6 +4,32 @@ server:
 spring:
   application:
     name: user-service
+  datasource:
+    url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/shopflow_user
+    username: ${POSTGRES_USER:shopflow}
+    password: ${POSTGRES_PASSWORD:shopflow}
+  jpa:
+    hibernate:
+      ddl-auto: validate          # schema is owned by Flyway, never by Hibernate
+    open-in-view: false
+    properties:
+      hibernate.jdbc.time_zone: UTC
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+shopflow:
+  jwt:
+    # Prod MUST override JWT_SECRET. The dev fallback is >= 32 bytes so local runs work out of the box.
+    secret: ${JWT_SECRET:dev-only-secret-change-me-please-0123456789abcdef}
+    issuer: shopflow
+    access-token-ttl: 15m
+    refresh-token-ttl: 7d
+    clock-skew: 30s
+  security:
+    # Comma-separated emails that are granted ADMIN on registration (bootstrap the first admin).
+    bootstrap-admin-emails: ${BOOTSTRAP_ADMIN_EMAILS:}
+  bcrypt-strength: 12
 
 management:
   endpoints:
