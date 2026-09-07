@@ -4,12 +4,12 @@ An event-driven e-commerce backend built as a production-style portfolio project
 Spring Boot 3 microservices, PostgreSQL, Redis, Apache Kafka, an orchestrated Saga for the
 order workflow, Docker, Kubernetes, and CI.
 
-> **Project status: Phase 8 of 22 — Inventory Service (pre-Kafka).**
-> Implemented so far: **User** (auth, JWT, refresh rotation), **Product** (CRUD, search/filter,
-> Redis cache-aside), **Cart** (Redis-only, priced), **Order** (idempotent creation, lifecycle
-> state machine, history, cancellation), **Inventory** (atomic oversell-safe reserve/release/confirm,
-> idempotent per order; Product→Inventory REST wired per ADR-0005). Shared security lives in
-> `shopflow-common` (ADR-0008). Kafka + the orchestrated Saga arrive in Phase 11.
+> **Project status: Phase 10 of 22 — all seven services built in isolation (pre-Kafka).**
+> **User** (auth, JWT, refresh rotation) · **Product** (CRUD, search/filter, Redis cache-aside) ·
+> **Cart** (Redis-only, priced) · **Order** (idempotent creation, lifecycle state machine, history) ·
+> **Inventory** (atomic oversell-safe reserve/release/confirm) · **Payment** (idempotent simulated
+> charges + refunds) · **Notification** (simulated send, idempotent per event, retry job).
+> Shared security in `shopflow-common` (ADR-0008). **Next: Phase 11 wires Kafka + the orchestrated Saga.**
 > Docs: [architecture](docs/architecture/phase-01-requirements-and-architecture.md) ·
 > [conventions](docs/architecture/conventions.md) ·
 > [event catalog](docs/architecture/events/event-catalog.md) ·
@@ -18,6 +18,8 @@ order workflow, Docker, Kubernetes, and CI.
 > [cart](docs/architecture/services/cart-service.md) ·
 > [order](docs/architecture/services/order-service.md) ·
 > [inventory](docs/architecture/services/inventory-service.md) ·
+> [payment](docs/architecture/services/payment-service.md) ·
+> [notification](docs/architecture/services/notification-service.md) ·
 > [ADRs](docs/architecture/adr/README.md).
 
 ## Services
