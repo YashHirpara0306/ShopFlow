@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Shared logging configuration. Each service includes this from its own logback-spring.xml:
+
+      <configuration>
+          <include resource="logback-common.xml"/>
+      </configuration>
+
+  Format is chosen by Spring profile:
+    * default (local dev)        -> human-readable console lines, correlation id in brackets
+    * "json" / "docker" / "prod" -> one JSON object per line (Logstash layout) for log shippers
+
+  Every line carries the MDC keys `correlationId` and `userId` when present, so a single id links
+  one request across all services. Each branch defines its own CONSOLE appender so exactly one is
+  ever active (an unreferenced appender makes logback dump its status on startup).
+-->
+<included>
+
+    <!-- Registers Spring Boot's logback conversion words (wEx, clr, ...) and default properties. -->
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+
+    <springProperty scope="context" name="appName" source="spring.application.name" defaultValue="shopflow-service"/>
+
+    <springProfile name="json | docker | prod">
+        <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+            <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+                <includeMdcKeyName>correlationId</includeMdcKeyName>
+                <includeMdcKeyName>userId</includeMdcKeyName>
+                <customFields>{"service":"${appName}"}</customFields>
+            </encoder>
+        </appender>
+        <root level="INFO">
+            <appender-ref ref="CONSOLE"/>
+        </root>
+    </springProfile>
+
+    <springProfile name="!(json | docker | prod)">
+        <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+            <encoder>
+                <pattern>%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX} %-5level [%X{correlationId:-no-cid}] [%X{userId:-anon}] %logger{36} - %msg%n%wEx</pattern>
+            </encoder>
+        </appender>
+        <root level="INFO">
+            <appender-ref ref="CONSOLE"/>
+        </root>
+    </springProfile>
+
+    <logger name="com.shopflow" level="INFO"/>
+
+</included>

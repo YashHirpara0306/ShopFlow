@@ -4,9 +4,14 @@ An event-driven e-commerce backend built as a production-style portfolio project
 Spring Boot 3 microservices, PostgreSQL, Redis, Apache Kafka, an orchestrated Saga for the
 order workflow, Docker, Kubernetes, and CI.
 
-> **Project status: Phase 2 of 22 — repository skeleton.**
-> The build compiles and the shared library's tests pass. Business features begin in Phase 4.
-> Full requirements & architecture: [`docs/architecture/phase-01-requirements-and-architecture.md`](docs/architecture/phase-01-requirements-and-architecture.md).
+> **Project status: Phase 3 of 22 — shared conventions.**
+> Skeleton builds; `shopflow-common` now carries the event envelope, standard error handling,
+> correlation-id + structured logging, a JWT validator, and the pagination envelope, auto-wired into
+> every service. Business features begin in Phase 4.
+> Docs: [architecture](docs/architecture/phase-01-requirements-and-architecture.md) ·
+> [conventions](docs/architecture/conventions.md) ·
+> [event catalog](docs/architecture/events/event-catalog.md) ·
+> [ADRs](docs/architecture/adr/README.md).
 
 ## Services
 
@@ -20,7 +25,7 @@ order workflow, Docker, Kubernetes, and CI.
 | `inventory-service` | 8085 | Stock, reserve/release/confirm, oversell prevention | PostgreSQL |
 | `payment-service` | 8086 | Simulated payments, idempotent charges, refunds | PostgreSQL |
 | `notification-service` | 8087 | Consume events, simulate email/SMS, retry | PostgreSQL |
-| `shopflow-common` (`libs/`) | — | Shared event envelope, error model, header constants | — |
+| `shopflow-common` (`libs/`) | — | Auto-config starter: event envelope, error handling, correlation id + logging, JWT validator, `PageResponse` | — |
 
 ## Repository layout
 

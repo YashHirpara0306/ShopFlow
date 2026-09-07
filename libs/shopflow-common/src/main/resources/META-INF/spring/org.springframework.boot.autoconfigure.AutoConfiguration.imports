@@ -1,0 +1,3 @@
+com.shopflow.common.config.CorrelationIdAutoConfiguration
+com.shopflow.common.config.WebErrorHandlingAutoConfiguration
+com.shopflow.common.config.JwtAutoConfiguration
