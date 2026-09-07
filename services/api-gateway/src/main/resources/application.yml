@@ -1,0 +1,47 @@
+server:
+  port: ${SERVER_PORT:8080}
+
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      # Skeleton routes. JWT verification, identity headers, rate limiting and the
+      # correlation-id filter are added in Phase 13 (API Gateway) / Phase 14 (Security).
+      routes:
+        - id: user-service
+          uri: ${USER_SERVICE_URI:http://localhost:8081}
+          predicates:
+            - Path=/api/users/**,/api/auth/**
+        - id: product-service
+          uri: ${PRODUCT_SERVICE_URI:http://localhost:8082}
+          predicates:
+            - Path=/api/products/**,/api/categories/**
+        - id: cart-service
+          uri: ${CART_SERVICE_URI:http://localhost:8083}
+          predicates:
+            - Path=/api/cart/**
+        - id: order-service
+          uri: ${ORDER_SERVICE_URI:http://localhost:8084}
+          predicates:
+            - Path=/api/orders/**
+      # inventory-service and payment-service are NOT exposed directly to clients.
+      # Their admin surface is added later under /api/admin/** with an ADMIN-only filter.
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+
+logging:
+  level:
+    com.shopflow: INFO

@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <!--
+      ShopFlow parent POM.
+
+      Inherits from spring-boot-starter-parent so we get curated, mutually-compatible
+      versions for ~200 libraries (Jackson, Hibernate, kafka-clients, Testcontainers deps, ...).
+      We never hand-pick those versions; we only manage the few libraries Spring Boot does
+      not know about (Spring Cloud, springdoc, Testcontainers BOM) plus our own module.
+    -->
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>3.4.1</version>
+        <relativePath/>
+    </parent>
+
+    <groupId>com.shopflow</groupId>
+    <artifactId>shopflow-parent</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+    <packaging>pom</packaging>
+
+    <name>ShopFlow Parent</name>
+    <description>Event-driven e-commerce backend - parent aggregator POM</description>
+
+    <modules>
+        <module>libs/shopflow-common</module>
+        <module>services/api-gateway</module>
+        <module>services/user-service</module>
+        <module>services/product-service</module>
+        <module>services/cart-service</module>
+        <module>services/order-service</module>
+        <module>services/inventory-service</module>
+        <module>services/payment-service</module>
+        <module>services/notification-service</module>
+    </modules>
+
+    <properties>
+        <!-- Bytecode target. JDK 21 (LTS) is recommended to build; bytecode is 17 for portability. -->
+        <java.version>17</java.version>
+        <maven.compiler.release>17</maven.compiler.release>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+        <!-- Libraries Spring Boot's BOM does not manage. -->
+        <spring-cloud.version>2024.0.0</spring-cloud.version>
+        <springdoc.version>2.7.0</springdoc.version>
+        <testcontainers.version>1.20.4</testcontainers.version>
+
+        <shopflow-common.version>0.0.1-SNAPSHOT</shopflow-common.version>
+    </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <!-- Spring Cloud (gives us spring-cloud-starter-gateway, resilience4j, ...). -->
+            <dependency>
+                <groupId>org.springframework.cloud</groupId>
+                <artifactId>spring-cloud-dependencies</artifactId>
+                <version>${spring-cloud.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
+            <!-- Testcontainers modules (postgresql, kafka, junit-jupiter, ...). -->
+            <dependency>
+                <groupId>org.testcontainers</groupId>
+                <artifactId>testcontainers-bom</artifactId>
+                <version>${testcontainers.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
+            <!-- OpenAPI / Swagger UI. -->
+            <dependency>
+                <groupId>org.springdoc</groupId>
+                <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+                <version>${springdoc.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.springdoc</groupId>
+                <artifactId>springdoc-openapi-starter-webflux-ui</artifactId>
+                <version>${springdoc.version}</version>
+            </dependency>
+
+            <!-- Our shared library. -->
+            <dependency>
+                <groupId>com.shopflow</groupId>
+                <artifactId>shopflow-common</artifactId>
+                <version>${shopflow-common.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <build>
+        <plugins>
+            <!--
+              Repackage each service into an executable "fat" jar. Inherited by every module;
+              the shopflow-common library overrides this with <skip>true</skip> (it has no main class).
+              Version and the `repackage` execution come from spring-boot-starter-parent's pluginManagement.
+            -->
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+
+            <!--
+              Bind Failsafe now so that integration tests (*IT.java / *IntegrationTest.java)
+              added in later phases are executed automatically during `mvn verify`.
+              Surefire (unit tests, *Test.java / *Tests.java) is already bound by the Boot parent.
+            -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-failsafe-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>integration-test</goal>
+                            <goal>verify</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>

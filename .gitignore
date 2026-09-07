@@ -1,0 +1,39 @@
+# --- Build output ---
+target/
+build/
+out/
+*.jar
+*.war
+!.mvn/wrapper/maven-wrapper.jar
+
+# --- IDEs ---
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+.settings/
+.project
+.classpath
+nbproject/
+.nb-gradle/
+
+# --- OS ---
+.DS_Store
+Thumbs.db
+
+# --- Local config & secrets (NEVER commit) ---
+.env
+*.local
+*.pem
+*.key
+# Local-only Maven flags (e.g. TLS-proxy workaround). Must never reach CI.
+.mvn/maven.config
+
+# --- Logs & tmp ---
+*.log
+logs/
+tmp/
+
+# --- Docker ---
+.docker/data/

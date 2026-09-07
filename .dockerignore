@@ -1,0 +1,15 @@
+# Keep the image build context small and deterministic.
+**/target/
+**/build/
+.git/
+.github/
+.idea/
+.vscode/
+*.iml
+.env
+*.log
+logs/
+docs/
+deploy/k8s/
+deploy/aws/
+deploy/monitoring/
