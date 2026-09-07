@@ -13,6 +13,7 @@ import org.springframework.stereotype.Component;
 import java.time.Duration;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Cache-aside for a single product's detail representation.
@@ -66,10 +67,17 @@ public class ProductCache {
 
     public void put(ProductResponse product) {
         try {
-            redis.opsForValue().set(KEY_PREFIX + product.id(), objectMapper.writeValueAsString(product), ttl);
+            redis.opsForValue().set(KEY_PREFIX + product.id(), objectMapper.writeValueAsString(product), jitteredTtl());
         } catch (Exception e) {
             log.warn("product cache write failed for {}: {}", product.id(), e.toString());
         }
+    }
+
+    /** +/- 10% so a burst of populates for the same key does not all expire on the same tick (stampede). */
+    private Duration jitteredTtl() {
+        long base = ttl.toMillis();
+        long delta = (long) (base * 0.1);
+        return Duration.ofMillis(base + ThreadLocalRandom.current().nextLong(-delta, delta + 1));
     }
 
     public void evict(UUID id) {

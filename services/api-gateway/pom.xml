@@ -15,14 +15,18 @@
     <name>ShopFlow API Gateway</name>
     <description>
         Single entry point: routing, JWT verification, identity forwarding, rate limiting,
-        correlation-id propagation, CORS. This is the ONLY reactive (WebFlux/Netty) module.
+        correlation-id propagation, CORS, secure headers. The only reactive (WebFlux/Netty) module.
     </description>
 
     <dependencies>
-        <!-- Spring Cloud Gateway (reactive). Pulls in spring-boot-starter-webflux transitively. -->
         <dependency>
             <groupId>org.springframework.cloud</groupId>
             <artifactId>spring-cloud-starter-gateway</artifactId>
+        </dependency>
+        <!-- Reactive Redis for the rate limiter -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-redis-reactive</artifactId>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -33,7 +37,6 @@
             <artifactId>micrometer-registry-prometheus</artifactId>
             <scope>runtime</scope>
         </dependency>
-        <!-- WebFlux flavour of the OpenAPI UI (aggregates downstream service docs in a later phase). -->
         <dependency>
             <groupId>org.springdoc</groupId>
             <artifactId>springdoc-openapi-starter-webflux-ui</artifactId>
