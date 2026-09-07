@@ -89,6 +89,7 @@ class OrderSagaOrchestratorIT {
     static class OutboundEvents {
         final BlockingQueue<JsonNode> orderEvents = new LinkedBlockingQueue<>();
         final BlockingQueue<JsonNode> paymentEvents = new LinkedBlockingQueue<>();
+        final BlockingQueue<String> deadLetters = new LinkedBlockingQueue<>();
         private final ObjectMapper mapper = new ObjectMapper();
 
         @KafkaListener(topics = Topics.ORDER_EVENTS, groupId = "test-order-events")
@@ -99,6 +100,11 @@ class OrderSagaOrchestratorIT {
         @KafkaListener(topics = Topics.PAYMENT_EVENTS, groupId = "test-payment-events")
         void payment(ConsumerRecord<String, String> r) throws Exception {
             paymentEvents.add(mapper.readTree(r.value()));
+        }
+
+        @KafkaListener(topics = "inventory-events.DLT", groupId = "test-dlt")
+        void dlt(ConsumerRecord<String, String> r) {
+            deadLetters.add(r.value());
         }
     }
 
@@ -166,6 +172,31 @@ class OrderSagaOrchestratorIT {
                 assertThat(orders.findById(orderId).orElseThrow().getStatus()).isEqualTo(OrderStatus.CONFIRMED));
         await().atMost(10, TimeUnit.SECONDS).until(() ->
                 outbound.orderEvents.stream().anyMatch(e -> e.get("eventType").asText().equals("ORDER_CONFIRMED")));
+    }
+
+    @Test
+    void paymentFailureCancelsTheOrderAndEmitsOrderCancelled() throws Exception {
+        UUID orderId = createOrder();
+        publish(Topics.INVENTORY_EVENTS, orderId, "INVENTORY_RESERVED", Map.of("orderId", orderId.toString()));
+        await().atMost(10, TimeUnit.SECONDS).untilAsserted(() ->
+                assertThat(orders.findById(orderId).orElseThrow().getStatus()).isEqualTo(OrderStatus.AWAITING_PAYMENT));
+
+        publish(Topics.PAYMENT_EVENTS, orderId, "PAYMENT_FAILED",
+                Map.of("orderId", orderId.toString(), "reason", "DECLINED"));
+
+        await().atMost(10, TimeUnit.SECONDS).untilAsserted(() ->
+                assertThat(orders.findById(orderId).orElseThrow().getStatus()).isEqualTo(OrderStatus.CANCELLED));
+        await().atMost(10, TimeUnit.SECONDS).until(() ->
+                outbound.orderEvents.stream().anyMatch(e -> e.get("eventType").asText().equals("ORDER_CANCELLED")));
+    }
+
+    @Test
+    void aMalformedEventGoesStraightToTheDeadLetterTopic() throws Exception {
+        // a value that is not a valid EventEnvelope -> EventJson.parse throws -> non-retryable -> DLT
+        kafkaTemplate.send(Topics.INVENTORY_EVENTS, UUID.randomUUID().toString(), "{\"not\":\"an envelope\"}");
+
+        await().atMost(15, TimeUnit.SECONDS).until(() -> !outbound.deadLetters.isEmpty());
+        assertThat(outbound.deadLetters.peek()).contains("not");
     }
 
     @Test
