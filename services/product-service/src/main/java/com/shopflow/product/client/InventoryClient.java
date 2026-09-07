@@ -4,10 +4,9 @@ import java.util.UUID;
 
 /**
  * When an admin creates a product, Inventory Service must get a stock row (at 0). Per ADR-0005 this
- * is a synchronous REST call, not a Kafka event. Phase 5 ships a logging stub; Phase 8 wires the
- * real HTTP client once Inventory Service exists.
+ * is a synchronous REST call, not a Kafka event. The admin's bearer token is forwarded.
  */
 public interface InventoryClient {
 
-    void registerNewProduct(UUID productId, String sku);
+    void registerNewProduct(UUID productId, String sku, String bearerToken);
 }

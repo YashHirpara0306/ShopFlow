@@ -29,6 +29,9 @@ shopflow:
     issuer: shopflow
   cache:
     product-ttl: 10m
+  clients:
+    inventory-service:
+      base-url: ${INVENTORY_SERVICE_URI:http://localhost:8085}
 
 management:
   endpoints:

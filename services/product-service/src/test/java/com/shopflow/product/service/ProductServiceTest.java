@@ -54,10 +54,10 @@ class ProductServiceTest {
         when(categories.findById(cat.getId())).thenReturn(Optional.of(cat));
         when(products.existsBySkuIgnoreCase("BOOK-1")).thenReturn(false);
 
-        ProductResponse response = service().create(createRequest(cat.getId()));
+        ProductResponse response = service().create(createRequest(cat.getId()), "Bearer t");
 
         verify(products).saveAndFlush(any(Product.class));
-        verify(inventoryClient).registerNewProduct(any(UUID.class), eq("BOOK-1"));
+        verify(inventoryClient).registerNewProduct(any(UUID.class), eq("BOOK-1"), eq("Bearer t"));
         assertThat(response.sku()).isEqualTo("BOOK-1");
         assertThat(response.categoryName()).isEqualTo("Books");
         assertThat(response.active()).isTrue();
@@ -68,7 +68,7 @@ class ProductServiceTest {
         UUID missing = UUID.randomUUID();
         when(categories.findById(missing)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> service().create(createRequest(missing)))
+        assertThatThrownBy(() -> service().create(createRequest(missing), "Bearer t"))
                 .isInstanceOf(ResourceNotFoundException.class);
         verify(products, never()).saveAndFlush(any());
         verifyNoInteractions(inventoryClient);
@@ -80,7 +80,7 @@ class ProductServiceTest {
         when(categories.findById(cat.getId())).thenReturn(Optional.of(cat));
         when(products.existsBySkuIgnoreCase("BOOK-1")).thenReturn(true);
 
-        assertThatThrownBy(() -> service().create(createRequest(cat.getId())))
+        assertThatThrownBy(() -> service().create(createRequest(cat.getId()), "Bearer t"))
                 .isInstanceOf(ConflictException.class);
         verify(products, never()).saveAndFlush(any());
     }

@@ -3,10 +3,13 @@ package com.shopflow.product;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.shopflow.common.security.JwtIssuer;
+import com.shopflow.product.client.InventoryClient;
 import com.shopflow.product.repository.CategoryRepository;
 import com.shopflow.product.repository.ProductRepository;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -47,6 +50,14 @@ class ProductCatalogIT {
 
     @Container
     static GenericContainer<?> redis = new GenericContainer<>("redis:7-alpine").withExposedPorts(6379);
+
+    @TestConfiguration
+    static class StubInventory {
+        @Bean
+        InventoryClient inventoryClient() {
+            return (productId, sku, bearerToken) -> { /* no-op: Inventory Service has its own tests */ };
+        }
+    }
 
     @DynamicPropertySource
     static void redisProps(DynamicPropertyRegistry registry) {
