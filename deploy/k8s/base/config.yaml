@@ -1,0 +1,50 @@
+# Non-secret configuration shared by all services. Everything here is safe to commit.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: shopflow-config
+  namespace: shopflow
+data:
+  POSTGRES_HOST: "postgres"
+  POSTGRES_PORT: "5432"
+  POSTGRES_USER: "shopflow"
+  REDIS_HOST: "redis"
+  REDIS_PORT: "6379"
+  SPRING_KAFKA_BOOTSTRAP_SERVERS: "kafka:9092"
+  SPRING_PROFILES_ACTIVE: "prod"
+  USER_SERVICE_URI: "http://user-service:8081"
+  PRODUCT_SERVICE_URI: "http://product-service:8082"
+  CART_SERVICE_URI: "http://cart-service:8083"
+  ORDER_SERVICE_URI: "http://order-service:8084"
+  INVENTORY_SERVICE_URI: "http://inventory-service:8085"
+  PAYMENT_SERVICE_URI: "http://payment-service:8086"
+  NOTIFICATION_SERVICE_URI: "http://notification-service:8087"
+  CORS_ALLOWED_ORIGINS: "http://localhost:3000"
+  BOOTSTRAP_ADMIN_EMAILS: "admin@shopflow.local"
+---
+# Secrets. In a real cluster these come from a sealed-secret / external secret store,
+# NOT from a committed file. Placeholder values here are for `kind` only.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: shopflow-secrets
+  namespace: shopflow
+type: Opaque
+stringData:
+  JWT_SECRET: "kind-only-change-me-0123456789abcdef0123456789abcdef"
+  POSTGRES_PASSWORD: "shopflow"
+---
+# Postgres bootstrap script - creates one database per service.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-init
+  namespace: shopflow
+data:
+  01-create-databases.sql: |
+    CREATE DATABASE shopflow_user;
+    CREATE DATABASE shopflow_product;
+    CREATE DATABASE shopflow_order;
+    CREATE DATABASE shopflow_inventory;
+    CREATE DATABASE shopflow_payment;
+    CREATE DATABASE shopflow_notification;

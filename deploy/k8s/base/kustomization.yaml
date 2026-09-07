@@ -1,0 +1,40 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: shopflow
+
+resources:
+  - namespace.yaml
+  - config.yaml
+  - infra.yaml
+  - services.yaml
+  - ingress.yaml
+  - hpa.yaml
+
+# Point the logical image names at your registry + tag. For `kind`, load the images
+# (`kind load docker-image shopflow/<svc>:latest`) and keep the tag as `latest`.
+images:
+  - name: shopflow/api-gateway
+    newName: ghcr.io/your-org/shopflow/api-gateway
+    newTag: develop
+  - name: shopflow/user-service
+    newName: ghcr.io/your-org/shopflow/user-service
+    newTag: develop
+  - name: shopflow/product-service
+    newName: ghcr.io/your-org/shopflow/product-service
+    newTag: develop
+  - name: shopflow/cart-service
+    newName: ghcr.io/your-org/shopflow/cart-service
+    newTag: develop
+  - name: shopflow/order-service
+    newName: ghcr.io/your-org/shopflow/order-service
+    newTag: develop
+  - name: shopflow/inventory-service
+    newName: ghcr.io/your-org/shopflow/inventory-service
+    newTag: develop
+  - name: shopflow/payment-service
+    newName: ghcr.io/your-org/shopflow/payment-service
+    newTag: develop
+  - name: shopflow/notification-service
+    newName: ghcr.io/your-org/shopflow/notification-service
+    newTag: develop

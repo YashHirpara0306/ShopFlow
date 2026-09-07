@@ -6,38 +6,44 @@ on:
   pull_request:
     branches: [main, develop]
 
-# Cancel superseded runs on the same ref.
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  build-test:
-    name: Build & test
+  compile-and-unit:
+    name: Compile + unit/slice tests
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up JDK 21
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: "21"
-          cache: maven
-
-      # `verify` runs Surefire (unit) + Failsafe (integration). Integration tests added in
-      # later phases use Testcontainers; the ubuntu-latest runner already has Docker.
-      - name: Build and test
-        run: mvn -B -ntp verify
-
-      - name: Publish test reports
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: "21", cache: maven }
+      - name: Compile + unit/slice tests (fast, no Docker)
+        run: mvn -B -ntp -DskipITs verify
+      - name: Publish unit test reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: test-reports
-          path: |
-            **/target/surefire-reports/*.xml
-            **/target/failsafe-reports/*.xml
+          name: surefire-reports
+          path: "**/target/surefire-reports/*.xml"
+          if-no-files-found: ignore
+          retention-days: 7
+
+  integration:
+    name: Integration tests (Testcontainers)
+    runs-on: ubuntu-latest    # Docker is available on the runner
+    needs: compile-and-unit
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: "21", cache: maven }
+      - name: Full verify (Postgres / Redis / Kafka via Testcontainers)
+        run: mvn -B -ntp verify
+      - name: Publish integration test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: failsafe-reports
+          path: "**/target/failsafe-reports/*.xml"
           if-no-files-found: ignore
           retention-days: 7
